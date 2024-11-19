@@ -99,14 +99,6 @@ func main() {
 		log.Fatalf("Error creating Cloudflare client: %v", err)
 	}
 
-	recordId, err := GetDNSRecordID(api, config)
-	if err != nil {
-		log.Fatalf("Error getting DNS Record Id: %v", err)
-	}
-
-	//fmt.Println("Found Record Id ", recordId)
-	config.RecordID = recordId
-
 	for {
 		ip, err := GetPublicIP()
 		if err != nil {
@@ -115,6 +107,29 @@ func main() {
 			time.Sleep(config.Interval)
 			continue
 		}
+		recordId, err := GetDNSRecordID(api, config)
+		if err != nil {
+			log.Fatalf("Error getting DNS Record Id: %v", err)
+		}
+
+		//fmt.Println("Found Record Id ", recordId)
+		config.RecordID = recordId
+
+		err = UpdateDNSRecord(api, config, ip)
+		if err != nil {
+			log.Printf("error in UpdateDNSRecord: %v", err)
+		} else {
+			log.Printf("Successfully updated DNS record to %s", ip)
+		}
+
+		config.RecordName = "*." + config.RecordName
+		recordId, err = GetDNSRecordID(api, config)
+		if err != nil {
+			log.Fatalf("Error getting DNS Record Id: %v", err)
+		}
+
+		//fmt.Println("Found Record Id ", recordId)
+		config.RecordID = recordId
 
 		err = UpdateDNSRecord(api, config, ip)
 		if err != nil {
